@@ -1,0 +1,30 @@
+AGENTE DE IMPRESSORAS - WINDOWS
+
+1. Gere o pacote no painel com o IP ou dominio do servidor acessivel pela rede.
+   No computador remoto, 127.0.0.1 e localhost apontam para ele mesmo.
+2. Extraia TODOS os arquivos do ZIP em uma pasta permanente, fora do ZIP.
+3. Execute iniciar.bat uma vez. Ele inicia o agente oculto e instala automaticamente
+   o atalho de inicializacao para o usuario atual, sem exigir administrador.
+4. Confira o computador conectado no painel e selecione a impressora no destino.
+
+O agente volta a iniciar quando esse usuario entra no Windows e tenta reconectar
+quando o servidor ou a rede estiver indisponivel. Mantenha a pasta no mesmo local.
+Se mover a pasta, execute iniciar.bat novamente para atualizar o atalho.
+Nao e necessario Python. As impressoras devem estar instaladas no Windows.
+
+PARAR AGORA: execute parar.bat. O agente aguarda o envio atual terminar.
+DESATIVAR INICIO AUTOMATICO: execute desativar_inicio_automatico.bat.
+Para desativar e encerrar, execute os dois arquivos.
+REINICIAR: execute iniciar.bat.
+DIAGNOSTICO: consulte agente.log nesta pasta.
+
+PACOTES ANTIGOS: baixe um pacote atualizado, extraia e execute iniciar.bat
+no computador das impressoras. Se gerar outra identidade, selecione o novo
+computador no destino e revogue o acesso do antigo depois de validar a conexao.
+
+DESCOBERTA AUTOMATICA DO LINK:
+O agente consulta a cada 30 segundos o arquivo server-url.json em:
+https://github.com/PopularAtacarejo/AgentImp
+Quando o HTTPS do Cloudflare muda, salva o endereco no config.json e reconecta.
+Se a consulta falhar, mantem o ultimo endereco. Credenciais nunca sao enviadas
+para o GitHub. O arquivo remoto contem somente o endereco, nao codigo executavel.
