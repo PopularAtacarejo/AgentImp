@@ -27,7 +27,7 @@ def validate_url(value):
     return 'https://' + parsed.hostname
 
 
-def publish_url(value, token):
+def publish_url(value, token, force=False):
     address = validate_url(value)
     headers = {'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json',
                'X-GitHub-Api-Version': '2022-11-28'}
@@ -36,7 +36,7 @@ def publish_url(value, token):
         raise RuntimeError(f'Falha ao ler arquivo no GitHub (HTTP {response.status_code}).')
     current = response.json()
     previous = json.loads(base64.b64decode(current['content']))
-    if previous.get('server') == address:
+    if previous.get('server') == address and not force:
         return False
     data = dict(schema=1, server=address, updated_at=datetime.now(timezone.utc).isoformat())
     response = requests.put(API, headers=headers, json={
@@ -82,7 +82,7 @@ def main():
                     if match:
                         for attempt in range(5):
                             try:
-                                publish_url(match.group(0), token)
+                                publish_url(match.group(0), token, force=True)
                                 print('Novo endereco Cloudflare publicado no GitHub.', flush=True)
                                 break
                             except (requests.RequestException, RuntimeError):
