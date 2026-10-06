@@ -54,14 +54,8 @@ def main():
     parser.add_argument('--url', help='Publica o link de um tunel ja iniciado')
     parser.add_argument('--origin', default='http://127.0.0.1:8007')
     args = parser.parse_args()
-    token = os.environ.get('AGENTIMP_GITHUB_TOKEN', '').strip()
-    if not token and os.name == 'nt':
-        try:
-            import winreg
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment') as key:
-                token = str(winreg.QueryValueEx(key, 'AGENTIMP_GITHUB_TOKEN')[0]).strip()
-        except OSError:
-            pass
+    from github_link_config import resolve_github_token
+    token = resolve_github_token(__file__)
     if not token:
         print('Configure AGENTIMP_GITHUB_TOKEN no servidor com permissao Contents: Read and write somente no repositorio AgentImp.', file=sys.stderr)
         return 1
