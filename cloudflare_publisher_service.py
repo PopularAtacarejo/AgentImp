@@ -17,6 +17,7 @@ def start_cloudflare_publisher(base_file):
         if _started:
             return
         _started = True
+    from communication_status import set_status
     root = Path(base_file).resolve().parent
 
     def worker():
@@ -56,9 +57,11 @@ def start_cloudflare_publisher(base_file):
                         child.wait(timeout=10)
                         child = None
                     if not token:
+                        set_status(base_file, "cloudflare", "waiting", "Aguardando token GitHub e ativacao da publicacao automatica; nenhum novo HTTPS gerado.")
                         time.sleep(10)
                         continue
                     if child is None or child.poll() is not None:
+                        set_status(base_file, "cloudflare", "connecting", "Gerando novo HTTPS do Cloudflare para comunicacao com as impressoras...")
                         active_token = token
                         child = subprocess.Popen([sys.executable,'-u',str(root/'publicar_link_cloudflare.py')],
                             cwd=root, stdout=output, stderr=output, creationflags=subprocess.CREATE_NO_WINDOW)
