@@ -17,17 +17,6 @@ def start_cloudflare_publisher(base_file):
         if _started:
             return
         _started = True
-    token = os.environ.get('AGENTIMP_GITHUB_TOKEN', '').strip()
-    if not token:
-        try:
-            import winreg
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment') as key:
-                token = str(winreg.QueryValueEx(key, 'AGENTIMP_GITHUB_TOKEN')[0]).strip()
-        except OSError:
-            pass
-    if not token:
-        print('[CLOUDFLARE] Publicacao automatica aguarda AGENTIMP_GITHUB_TOKEN no servidor.', flush=True)
-        return
     root = Path(base_file).resolve().parent
 
     def worker():
@@ -46,6 +35,7 @@ def start_cloudflare_publisher(base_file):
             logs = root / 'logs'
             logs.mkdir(exist_ok=True)
             child = None
+            active_token = None
             def cleanup():
                 if child and child.poll() is None:
                     # Encerra tambem o cloudflared pertencente a este publicador.
@@ -55,7 +45,21 @@ def start_cloudflare_publisher(base_file):
             atexit.register(cleanup)
             with (logs / 'cloudflare_publicador.log').open('ab') as output:
                 while True:
+                    from github_link_config import public_github_config, resolve_github_token
+                    try:
+                        settings = public_github_config(base_file)
+                        token = resolve_github_token(base_file) if settings['enabled'] else ''
+                    except (ValueError, OSError):
+                        token = ''
+                    if child and child.poll() is None and (not token or token != active_token):
+                        cleanup()
+                        child.wait(timeout=10)
+                        child = None
+                    if not token:
+                        time.sleep(10)
+                        continue
                     if child is None or child.poll() is not None:
+                        active_token = token
                         child = subprocess.Popen([sys.executable,'-u',str(root/'publicar_link_cloudflare.py')],
                             cwd=root, stdout=output, stderr=output, creationflags=subprocess.CREATE_NO_WINDOW)
                     time.sleep(30)
