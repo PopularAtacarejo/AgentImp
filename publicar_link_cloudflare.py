@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 import requests
+from communication_status import set_status
 
 REPOSITORY = 'PopularAtacarejo/AgentImp'
 API = f'https://api.github.com/repos/{REPOSITORY}/contents/server-url.json'
@@ -60,6 +61,7 @@ def main():
         print('Configure AGENTIMP_GITHUB_TOKEN no servidor com permissao Contents: Read and write somente no repositorio AgentImp.', file=sys.stderr)
         return 1
     process = None
+    current_url = ""
     try:
         if args.url:
             publish_url(args.url, token)
@@ -71,33 +73,54 @@ def main():
         logs = Path(__file__).resolve().parent / 'logs'
         logs.mkdir(exist_ok=True)
         while True:
+            current_url = ""
+            set_status(__file__, "cloudflare", "connecting", "Iniciando tunel Cloudflare...")
             process = subprocess.Popen([binary, 'tunnel', '--url', args.origin, '--no-autoupdate'],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace',
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+            import threading
+            stop_heartbeat = threading.Event()
+            def heartbeat():
+                from communication_status import communication_status
+                while not stop_heartbeat.wait(25):
+                    if process.poll() is not None:
+                        return
+                    status = communication_status(__file__)['cloudflare']
+                    if status['state'] in {'published','publishing'}:
+                        set_status(__file__, 'cloudflare', status['state'], status['message'], url=status.get('url',''))
+            threading.Thread(target=heartbeat, daemon=True).start()
             with (logs / 'cloudflare_agentimp.log').open('a', encoding='utf-8') as log:
                 for line in process.stdout:
                     log.write(line)
                     log.flush()
                     match = re.search(r'https://[a-z0-9-]+\.trycloudflare\.com', line)
                     if match:
+                        current_url = match.group(0)
+                        set_status(__file__, "cloudflare", "publishing", "Novo HTTPS gerado; publicando endereco no GitHub...", url=current_url)
                         for attempt in range(5):
                             try:
                                 publish_url(match.group(0), token, force=True)
-                                print('Novo endereco Cloudflare publicado no GitHub.', flush=True)
+                                set_status(__file__, 'cloudflare', 'published', 'Link publicado no GitHub; agentes das impressoras podem reconectar.', url=current_url)
+                                print('Novo endereco Cloudflare publicado no GitHub: ' + current_url, flush=True)
                                 break
                             except (requests.RequestException, RuntimeError):
                                 if attempt == 4:
                                     raise RuntimeError('Nao foi possivel publicar o novo link. Verifique o token e a conexao do servidor.') from None
                                 time.sleep(5)
+            stop_heartbeat.set()
             process.wait()
+            set_status(__file__, "cloudflare", "disconnected", "Tunel encerrado; gerando outro link em 10 segundos.")
             print('Tunel encerrado; reiniciando em 10 segundos.', flush=True)
             time.sleep(10)
     except KeyboardInterrupt:
         return 0
     except (ValueError, RuntimeError, requests.RequestException) as exc:
+        set_status(__file__, 'cloudflare', 'error', str(exc), url=current_url)
         print(f'Erro: {exc}', file=sys.stderr)
         return 1
     finally:
+        if 'stop_heartbeat' in locals():
+            stop_heartbeat.set()
         if process and process.poll() is None:
             process.terminate()
             try:
