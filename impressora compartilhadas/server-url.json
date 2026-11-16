@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "service": "shared-printers",
-  "server": "https://north-mass-privilege-assume.trycloudflare.com",
-  "panel_url": "https://north-mass-privilege-assume.trycloudflare.com/",
-  "updated_at": "2026-11-16T19:50:37.268078+00:00"
+  "server": "https://sys-tokyo-yearly-sight.trycloudflare.com",
+  "panel_url": "https://sys-tokyo-yearly-sight.trycloudflare.com/",
+  "updated_at": "2026-11-16T19:59:19.264997+00:00"
 }
