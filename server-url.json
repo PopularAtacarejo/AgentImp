@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "server": "https://eco-compliance-was-sarah.trycloudflare.com",
-  "admin_url": "https://eco-compliance-was-sarah.trycloudflare.com/admin",
-  "public_url": "https://eco-compliance-was-sarah.trycloudflare.com/",
-  "updated_at": "2026-11-24T13:11:39.139749+00:00"
+  "server": "https://temperatures-device-actual-strictly.trycloudflare.com",
+  "admin_url": "https://temperatures-device-actual-strictly.trycloudflare.com/admin",
+  "public_url": "https://temperatures-device-actual-strictly.trycloudflare.com/",
+  "updated_at": "2026-11-24T13:23:20.013991+00:00"
 }
